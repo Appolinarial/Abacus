@@ -1,78 +1,80 @@
-document.addEventListener('DOMContentLoaded', function() {
-  document.addEventListener('click', function(event) {
-    let target = event.target;
-    if (!target.classList.contains('circle')) {
-      return;
-    } else {
-      calculateSum(target);
-    };
-  });
-  render();
+//constants
+const _LINES_COUNT = 5;
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('click', function (event) {
+        let target = event.target;
+        if (target.classList.contains('circle')) {
+            calculateNewSum(target);
+        };
+    });
+    const sumInput = document.getElementById("sumInput");
+    sumInput.value = 0;
+    sumInput.addEventListener('input', (event) => {
+        let sum = event.target.value;
+        let validated = event.target.value.split("").reduce((acc, char) => {
+            if (["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(char)
+                && acc.length < _LINES_COUNT) {
+                acc += char;
+            };
+            return acc;
+        }, "");
+        if (sum != validated) {
+            sumInput.value = validated;
+        }
+        render();
+    });
+    window.addEventListener('resize', () => {
+        requestAnimationFrame(render);
+    });
+    render();
 });
 
-function calculateSum(target) {
-  let lines = Array.from(document.querySelectorAll(".line")).reverse();
-  let parentIndex = lines.findIndex((elem)=> elem == target.parentNode);
-  const childIndex = Array.from(target.parentNode.children).indexOf(target);
-  let y = childIndex +1;
-  let numOfRightBalls = 0;
-  let numOfLeftBalls = 0;
-  if(target.classList.contains("right") == true){
-    while(y > 1 && target.parentNode.children[y-1].classList.contains("right")){
-      numOfRightBalls++;
-      y--;
-    } 
-  } else {
-    for(;y <= target.parentNode.children.length; y++) {
-      if(target.parentNode.children[y] && target.parentNode.children[y].classList.contains("right") == true) {
-      } else {
-        numOfLeftBalls++;
-      }
-    }
-  }
-  let newSumAfterClick = 1;
-  newSumAfterClick = (newSumAfterClick*10**parentIndex)*(numOfLeftBalls - numOfRightBalls);
-  document.getElementById("value").value = +document.getElementById("value").value + newSumAfterClick;
-  let sum = document.getElementById("value").value;
-  renderAfterClick(sum);
-}
-
-function renderAfterClick(sum) {
-  render();
-  let numsArray =  sum.split("").reverse();
-  let lines = document.querySelectorAll(".line");
-  let linesArray = Array.from(lines).reverse();
-  numsArray.forEach(function(element, index){
-    if (element == undefined) return;
-    else {
-      let num = element;
-      i = index;
-      currentLine = linesArray[i];
-      moveBallstoLeft(linesArray, i, num);
-    }
-  })
-}
-
-function moveBallstoLeft(linesArray, i, num) {
-  let balls = linesArray[i].querySelectorAll(".circle");
-  let ballsArray = Array.from(balls);
-  for(j=0; j < num; j++) {
-    ballsArray[ballsArray.length - 1 - j].style.removeProperty('left');
-    ballsArray[ballsArray.length - 1 - j].style.right = j*19 + "px";
-    ballsArray[ballsArray.length - 1 - j].classList.add("right");
-  };
-}
-
-//function measure { Определяет размер бусин и тд*}
-function render() {
-  let lines = document.querySelectorAll(".line");
-  Array.from(lines).forEach(function(element) {
-    let balls = element.querySelectorAll(".circle");
-    Array.from(balls).forEach(function(element, index) {
-      element.style.left = index*19 + "px";
-      element.classList.remove("right");
+function calculateNewSum(clickedBead) {
+    let lines = Array.from(document.querySelectorAll(".line")).reverse();
+    let lineIndex = lines.findIndex((elem) => elem == clickedBead.parentNode);
+    let beadsInLine = Array.from(lines[lineIndex].querySelectorAll(".circle"));
+    let clickedBeadIndex = beadsInLine.findIndex((elem) => elem == clickedBead);
+    let beadsChange = 0;
+    beadsInLine.forEach((bead, index) => {
+        if (isBeadRight(clickedBead)) {
+            if (isBeadRight(bead) && index <= clickedBeadIndex) {
+                beadsChange--;
+            }
+        } else {
+            if (!isBeadRight(bead) && index >= clickedBeadIndex) {
+                beadsChange++;
+            }
+        }
     });
-  })
+    const sumInput = document.getElementById("sumInput");
+    let updatedSum = +sumInput.value + (10 ** lineIndex) * beadsChange;
+    sumInput.value = updatedSum;
+    render();
 }
+
+let isBeadRight = (bead) => bead.classList.contains("right");
+
+function render() {
+    let sum = document.getElementById("sumInput").value;
+    let lines = Array.from(document.querySelectorAll(".line")).reverse();
+    let digits = sum.toString().split("").reverse();
+    let beadSize = document.querySelector(".circle").getBoundingClientRect().width;
+    lines.forEach((line, index) => {
+        let rightBeadsCount = digits[index] ? digits[index] : 0;
+        let beads = line.querySelectorAll(".circle");
+        Array.from(beads).forEach((bead, index, beads) => {
+            if (index < beads.length - rightBeadsCount) {
+                bead.classList.remove("right");
+                bead.style.left = `${index * beadSize}px`;
+            } else {
+                bead.classList.add("right");
+                bead.style.removeProperty("left");
+                bead.style.right = `${(beads.length - 1 - index) * beadSize}px`;
+            }
+        });
+    })
+}
+
 
 
